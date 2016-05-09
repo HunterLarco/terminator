@@ -1,0 +1,11 @@
+{
+  "name": "terminator",
+  "scripts": {
+    "pip:local:install": "sudo python setup.py install",
+    "pip:local:build": "sudo python setup.py bdist",
+    
+    "pip:remote:upload": "sudo python setup.py sdist upload",
+    "pip:remote:install": "sudo pip install terminator --upgrade",
+    "pip:remote:uninstall": "sudo -H pip uninstall terminator"
+  }
+}
