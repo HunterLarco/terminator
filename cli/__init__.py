@@ -1,3 +1,4 @@
-__all__ = ['entry']
+__all__ = ['entry', 'cli']
 
 import entry
+import cli
