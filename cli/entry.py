@@ -7,12 +7,12 @@ cli = cli.Parser('terminator', description='foobar')
 
 class login(cli.SubCommand):
   args = ['email', 'password']
-  flags = ['verbose']
-  kwargs = ['test']
+  flags = ['verbose:v']
+  kwargs = ['test:t']
   description = 'foo bar baz'
   
-  def __call__(email, password, verbose=None, test='thing'):
-    pass
+  def execute(self, email, password, verbose=None, test='thing'):
+    print 'Login email:{} password:{} verbose:{} test:{}'.format(email, password, verbose, test)
 
 
 def main():
