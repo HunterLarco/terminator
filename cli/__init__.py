@@ -1,4 +1,5 @@
-__all__ = ['entry', 'cli']
+__all__ = ['entry', 'cli', 'printutil']
 
 import entry
 import cli
+import printutil
