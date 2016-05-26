@@ -88,7 +88,7 @@ class Parser(object):
       if self.kwargs else '')
     flags = ('--{}'.format(' --'.join(self.flags))
       if self.flags else '')
-    return '{} {} {}'.format(args, kwargs, flags)
+    return ' '.join(filter(None, [args, kwargs, flags]))
   
   def matches(self, tokens):
     ''' Returns true/false '''
