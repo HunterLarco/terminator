@@ -126,7 +126,7 @@ class Command(object):
   def describe(self):
     docstr = self.function.__doc__
     if not docstr: docstr = '<Missing Documentation>'
-    docstr = ''.join(['> {}'.format(line.strip()) for line in docstr.split('\n')])
+    docstr = '\n'.join(['> {}'.format(line.strip()) for line in docstr.split('\n')])
     parserstr = self.parser.describe()
     return '{} {}\n{}'.format(self.name, parserstr, docstr)
   
