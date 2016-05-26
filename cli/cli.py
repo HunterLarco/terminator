@@ -1,5 +1,6 @@
 from __future__ import print_function
 import sys
+from collections import defaultdict
 
 
 __all__ = [
@@ -113,6 +114,11 @@ class Command(object):
     self.function = function
     self.parser = Parser(args, kwargs, flags)
   
+  def get_help_text(self):
+    docstr = self.function.__doc__
+    if not docstr: docstr = '<Missing Documentation>'
+    return docstr.strip()
+  
   def matches(self, tokens):
     if len(tokens) == 0 or not self.name == tokens[0]:
       return False
@@ -128,17 +134,25 @@ class Command(object):
 class CommandGroup(object):
   def __init__(self, name):
     self.name = name
-    self.commands = []
+    self.commands = defaultdict(list)
     self._insert_help_command()
   
   def _insert_help_command(self):
     @self.command('help')
     def help():
+      ''' Provides information about each function '''
       print('Help')
     
     @self.command('help', args=['command_name'])
     def help_with_command(command_name):
-      print('Help {}'.format(command_name))
+      ''' Provides information about a specific function '''
+      if not command_name in self.commands:
+        # TODO(hunterlarco) better error message
+        print('Command does not exist')
+      else:
+        command = self.commands[command_name]
+        for signature in command:
+          print(signature.get_help_text())
   
   def command(self, name, args=None, kwargs=None, flags=None):
     if not args: args = []
@@ -146,7 +160,7 @@ class CommandGroup(object):
     if not flags: flags = []
     def decorator(function):
       command = Command(name, function, args, kwargs, flags)
-      self.commands.append(command)
+      self.commands[name].append(command)
       return function
     return decorator
   
@@ -155,12 +169,14 @@ class CommandGroup(object):
     return self.parse(tokens)
   
   def parse(self, tokens):
-    for command in self.commands:
-      if command.matches(tokens):
-        command.parse(tokens)
-        break
-    else:
-      self.parse(['help'])
-
+    if len(tokens) > 0:
+      command_name = tokens[0]
+      command = self.commands[command_name]
+      for signature in command:
+        if signature.matches(tokens):
+          signature.parse(tokens)
+          return
+    self.parse(['help'])
+    
 
 group = CommandGroup
