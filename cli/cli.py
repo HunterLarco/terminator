@@ -27,8 +27,8 @@ class BasicTokenIterator(object):
     token = self._get_next_token()
     if token.startswith('-'):
       token = token.strip('-')
-      return token, self._parse_optional(token)
-    return token, self._parse_argument(token)
+      return self._parse_optional(token)
+    return self._parse_argument(token)
   next = __next__
   
   def _get_next_token(self):
@@ -48,9 +48,9 @@ class BasicTokenIterator(object):
   
   def _parse_optional(self, token):
     if token in self.flags:
-      return self._parse_flag(token)
+      return token, self._parse_flag(token)
     elif token in self.kwargs:
-      return self._parse_kwarg(token)
+      return token, self._parse_kwarg(token)
     else:
       raise TokenIterationException('Unknown flag {}'.format(token))
   
@@ -69,7 +69,7 @@ class BasicTokenIterator(object):
       arg = self.args.next()
     except StopIteration:
       raise TokenIterationException('Unexpected argument {}'.format(token))
-    return token
+    return arg, token
 
 
 class Parser(object):
@@ -129,16 +129,26 @@ class CommandGroup(object):
   def __init__(self, name):
     self.name = name
     self.commands = []
+    self._insert_help_command()
+  
+  def _insert_help_command(self):
+    @self.command('help')
+    def help():
+      print('Help')
+    
+    @self.command('help', args=['command_name'])
+    def help_with_command(command_name):
+      print('Help {}'.format(command_name))
   
   def command(self, name, args=None, kwargs=None, flags=None):
     if not args: args = []
     if not kwargs: kwargs = []
     if not flags: flags = []
-    def helper(function):
+    def decorator(function):
       command = Command(name, function, args, kwargs, flags)
       self.commands.append(command)
       return function
-    return helper
+    return decorator
   
   def autoparse(self):
     tokens = sys.argv[1:]
@@ -150,8 +160,7 @@ class CommandGroup(object):
         command.parse(tokens)
         break
     else:
-      # TODO(hunterlarco) help function
-      raise Exception('No matching function found')
+      self.parse(['help'])
 
 
 group = CommandGroup
