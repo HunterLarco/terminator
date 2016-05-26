@@ -2,18 +2,18 @@
 import cli
 
 
-cli = cli.Parser('terminator', description='foobar')
+terminator = cli.group('terminator')
 
 
-class login(cli.SubCommand):
-  args = ['email', 'password']
-  flags = ['verbose:v']
-  kwargs = ['test:t']
-  description = 'foo bar baz'
-  
-  def execute(self, email, password, verbose=None, test='thing'):
-    print 'Login email:{} password:{} verbose:{} test:{}'.format(email, password, verbose, test)
+@terminator.command('login',
+  args=['email', 'password'],
+  flags=['verbose:v'],
+  kwargs=['test:t'])
+def login(email, password, verbose=False, test='thing'):
+  """ Logs a user in. """
+  print('Login email:{} password:{} verbose:{} test:{}'
+    .format(email, password, verbose, test))
 
 
 def main():
-  cli.autoparse()
+  terminator.autoparse()
