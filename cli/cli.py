@@ -81,6 +81,15 @@ class Parser(object):
     self.kwargs = frozenset(kwargs)
     self.flags = frozenset(flags)
   
+  def describe(self):
+    args = ('<{}>'.format('> <'.join(self.args))
+      if self.args else '')
+    kwargs = ('--{} <value>'.format(' -- <value>'.join(self.kwargs))
+      if self.kwargs else '')
+    flags = ('--{}'.format(' --'.join(self.flags))
+      if self.flags else '')
+    return '{} {} {}'.format(args, kwargs, flags)
+  
   def matches(self, tokens):
     ''' Returns true/false '''
     iterator = self.TokenIterator(self.args, self.kwargs, self.flags, tokens)
@@ -114,10 +123,12 @@ class Command(object):
     self.function = function
     self.parser = Parser(args, kwargs, flags)
   
-  def get_help_text(self):
+  def describe(self):
     docstr = self.function.__doc__
     if not docstr: docstr = '<Missing Documentation>'
-    return docstr.strip()
+    docstr = ''.join(['> {}'.format(line.strip()) for line in docstr.split('\n')])
+    parserstr = self.parser.describe()
+    return '{} {}\n{}'.format(self.name, parserstr, docstr)
   
   def matches(self, tokens):
     if len(tokens) == 0 or not self.name == tokens[0]:
@@ -141,18 +152,25 @@ class CommandGroup(object):
     @self.command('help')
     def help():
       ''' Provides information about each function '''
-      print('Help')
+      print()
+      print('Run \'help <command>\' for more information on a specific command')
+      print('[ Commands ]')
+      for command_name in self.commands:
+        print('    {}'.format(command_name))
+      print()
     
     @self.command('help', args=['command_name'])
     def help_with_command(command_name):
       ''' Provides information about a specific function '''
       if not command_name in self.commands:
-        # TODO(hunterlarco) better error message
-        print('Command does not exist')
+        print('\nCommand \'{}\' not found\nTry running help for more info\n'
+          .format(command_name))
       else:
+        print()
         command = self.commands[command_name]
         for signature in command:
-          print(signature.get_help_text())
+          print(signature.describe())
+          print()
   
   def command(self, name, args=None, kwargs=None, flags=None):
     if not args: args = []
