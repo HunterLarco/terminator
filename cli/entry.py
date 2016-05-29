@@ -3,6 +3,18 @@ from __future__ import print_function
 import cli
 import requests
 import printutil
+from hashlib import sha256
+import pickle
+
+
+def remember_login(email, password, verbose=False):
+  if verbose: printutil.info('Encoding login information')
+  with open('.terminatorkeys', 'wb') as keys_file:
+    hashed_password = sha256(password).hexdigest()
+    hashed_email = sha256(password).hexdigest()
+    contents = pickle.dumps((hashed_email, hashed_password))
+    keys_file.write(contents)
+  if verbose: printutil.info('Login information encoded')
 
 
 terminator = cli.group('terminator')
@@ -12,7 +24,7 @@ terminator = cli.group('terminator')
   args=['email', 'password'],
   flags=['verbose', 'remember'],
   kwargs=[])
-def login(email, password, verbose=False, remember=False):
+def login(email, password, verbose=False, remember=False, hashed=False):
   ''' Logs a user in given an email address and password '''
   if verbose: printutil.info('Sending login request')
   try:
@@ -34,6 +46,7 @@ def login(email, password, verbose=False, remember=False):
     return
   print(json)
   printutil.info('Login successful')
+  if remember: remember_login(email, password, verbose=verbose)
 
 
 @terminator.command('login',
@@ -42,13 +55,24 @@ def login_from_remember(verbose=False):
   ''' Logs a user in based on their remembered credentials.
       This requires that you\'ve previously logged in using
       the --remember flag. '''
-  login('test', 'this', verbose=verbose)
+  if verbose: printutil.info('Opening .terminatorkeys file')
+  with open('.terminatorkeys', 'rb') as keys_file:
+    if verbose: printutil.info('.terminatorkeys file opened')
+    contents = keys_file.read()
+    if verbose: printutil.info('Unpickling .terminatorkeys file contents')
+    try:
+      hashed_email, hashed_password = pickle.loads(contents)
+    except:
+      printutil.error('Unpickling failed. Aborting')
+      return
+  if verbose: printutil.info('Beginning login procedure')
+  login(hashed_email, hashed_password, verbose=verbose, hashed=True)
 
 
 @terminator.command('signup',
   args=['email'],
-  flags=['verbose'])
-def signup(email, verbose=False):
+  flags=['verbose', 'remember'])
+def signup(email, verbose=False, remember=False):
   ''' Signs up a new user given a email address '''
   printutil.info('Are you sure you want to signup with')
   printutil.info('the email address \'{}\'? (y/n) '.format(email), newline=False)
@@ -72,6 +96,7 @@ def signup(email, verbose=False):
   if password != verification:
     printutil.warn('Your passwords did not match. Aborting')
     return
+  if verbose: printutil.info('Sending signup request')
   try:
     r = requests.post('https://mywebsite.com/api/signup', json={"key": "value"})
   except requests.exceptions.SSLError:
@@ -80,6 +105,9 @@ def signup(email, verbose=False):
   except requests.exceptions.ConnectionError:
     printutil.error('Could not form internet connection. Aborting')
     return
+  if verbose: printutil.info('Signup response received')
+  printutil.info('Signup Successful')  
+  if remember: remember_login(email, password, verbose=verbose)
 
 
 def main():
